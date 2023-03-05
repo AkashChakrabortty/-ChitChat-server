@@ -15,8 +15,13 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function run(){
     try{
-
-        
+        const usersCollection = client.db("chitchat-v1").collection("users");
+         //insert every new user
+        app.post("/storeUserInfo", async (req, res) => {
+        const user = req.body;
+        const result = await usersCollection.insertOne(user);
+        res.send(result);
+      });
 
     }
 
