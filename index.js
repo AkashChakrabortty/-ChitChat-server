@@ -35,6 +35,13 @@ async function run() {
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
+     //get all chitchat users
+     app.get("/getAllChitChatUsers", async (req, res) => {
+        const query = {};
+        const cursor = usersCollection.find(query);
+        const result = await cursor.toArray();
+        res.send(result);
+      });
   } catch {}
 }
 run().catch((err) => console.log(err));
