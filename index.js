@@ -21,7 +21,7 @@ async function run() {
   try {
     const usersCollection = client.db("chitchat-v1").collection("users");
     const postCollection = client.db("chitchat-v1").collection("posts");
-
+    const requestCollection = client.db("chitchat-v1").collection("requests");
     //insert every new user
     app.post("/storeUserInfo", async (req, res) => {
       const user = req.body;
@@ -58,7 +58,17 @@ async function run() {
         post['postOwnerPhoto'] = userInfo.profilePhoto
         post['postOwnerName'] = userInfo.name
         const result = await postCollection.insertOne(post);
-        res.send(result);
+        res.send(result); 
+      });
+
+       //insert user's friend req info
+      app.post("/addFriend", async (req, res) => {
+        const reqInfo = req.body;
+        const userInfo = await usersCollection.findOne({email:reqInfo.sender_email});
+        reqInfo['sender_photo'] = userInfo.profilePhoto
+        reqInfo['sender_name'] = userInfo.name
+        const result = await requestCollection.insertOne(reqInfo);
+        res.send(result)
       });
   } catch {}
 }
