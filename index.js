@@ -37,6 +37,13 @@ async function run() {
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
+     //get All Individual User Posts
+     app.get("/getAllIndividualUserPosts/:email", async (req, res) => {
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await postCollection.find(query).sort({ milliseconds: -1 }).toArray();
+        res.send(result);
+      });
      //get all chitchat users
      app.get("/getAllChitChatUsers", async (req, res) => {
         const query = {};
@@ -47,6 +54,9 @@ async function run() {
       //insert user post
       app.post("/insertPost", async (req, res) => {
         const post = req.body;
+        const userInfo = await usersCollection.findOne({email:post.email});
+        post['postOwnerPhoto'] = userInfo.profilePhoto
+        post['postOwnerName'] = userInfo.name
         const result = await postCollection.insertOne(post);
         res.send(result);
       });
