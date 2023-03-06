@@ -20,6 +20,8 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const usersCollection = client.db("chitchat-v1").collection("users");
+    const postCollection = client.db("chitchat-v1").collection("posts");
+
     //insert every new user
     app.post("/storeUserInfo", async (req, res) => {
       const user = req.body;
@@ -40,6 +42,12 @@ async function run() {
         const query = {};
         const cursor = usersCollection.find(query);
         const result = await cursor.toArray();
+        res.send(result);
+      });
+      //insert user post
+      app.post("/insertPost", async (req, res) => {
+        const post = req.body;
+        const result = await postCollection.insertOne(post);
         res.send(result);
       });
   } catch {}
