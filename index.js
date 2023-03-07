@@ -54,6 +54,7 @@ async function run() {
       const userInfo = await usersCollection.findOne({ email: post.email });
       post["postOwnerPhoto"] = userInfo.profilePhoto;
       post["postOwnerName"] = userInfo.name;
+      post["likes"] = [];
       const result = await postCollection.insertOne(post);
       res.send(result);
     });
@@ -83,8 +84,6 @@ async function run() {
      app.get("/getAllFriendsPosts/:email", async (req, res) => {
       const email = req.params.email;
       const userInfo = await usersCollection.findOne({email});
-      console.log(userInfo)
-      console.log(userInfo?.friends)
       const friends = userInfo?.friends;
       const allPosts = await postCollection.find().toArray();
       let friendsPost=[];
@@ -106,6 +105,28 @@ async function run() {
       user["friends"] = [];
       const result = await usersCollection.insertOne(user);
       res.send(result);
+    });
+
+     //insert user like
+     app.post("/like", async (req, res) => {
+      const likeInfo = req.body;
+      const query = { _id: new ObjectId(likeInfo._id) }; 
+      const postInfo = await postCollection.findOne(query);
+      const found = postInfo.likes.find((liker)=>{
+        return liker.email === likeInfo.email
+      })
+      if (found) {
+        res.send({ acknowledged: false });
+      } else {
+        const updateDoc = {
+          $set: {
+            likes: [...postInfo.likes,likeInfo]
+          }
+        }
+        const updateLikesArray = await postCollection.updateOne(query, updateDoc);
+        res.send(updateLikesArray);
+      }
+
     });
 
     //delete friend request
