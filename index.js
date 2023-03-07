@@ -104,6 +104,13 @@ async function run() {
       res.send(allLike)
     });
 
+      //get search result
+      app.get("/getSearchUsers/:name", async (req, res) => {
+        const name = req.params.name;
+        const allUsers = await usersCollection.find({name}).toArray()
+        res.send(allUsers)
+      });
+
     //insert every new user
     app.post("/storeUserInfo", async (req, res) => {
       const user = req.body;
