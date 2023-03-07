@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -22,14 +22,7 @@ async function run() {
     const usersCollection = client.db("chitchat-v1").collection("users");
     const postCollection = client.db("chitchat-v1").collection("posts");
     const requestCollection = client.db("chitchat-v1").collection("requests");
-    //insert every new user
-    app.post("/storeUserInfo", async (req, res) => {
-      const user = req.body;
-      user["profilePhoto"] = "https://i.ibb.co/RvdV5Kx/default-Avatar.webp";
-      user["coverPhoto"] = "https://i.ibb.co/RvdV5Kx/default-Avatar.webp";
-      const result = await usersCollection.insertOne(user);
-      res.send(result);
-    });
+    
     //get getSingleUserInfo
     app.get("/getSingleUserInfo/:email", async (req, res) => {
       const email = req.params.email;
@@ -37,39 +30,103 @@ async function run() {
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
-     //get All Individual User Posts
-     app.get("/getAllIndividualUserPosts/:email", async (req, res) => {
-        const email = req.params.email;
-        const query = { email: email };
-        const result = await postCollection.find(query).sort({ milliseconds: -1 }).toArray();
-        res.send(result);
-      });
-     //get all chitchat users
-     app.get("/getAllChitChatUsers", async (req, res) => {
-        const query = {};
-        const cursor = usersCollection.find(query);
-        const result = await cursor.toArray();
-        res.send(result);
-      });
-      //insert user post
-      app.post("/insertPost", async (req, res) => {
-        const post = req.body;
-        const userInfo = await usersCollection.findOne({email:post.email});
-        post['postOwnerPhoto'] = userInfo.profilePhoto
-        post['postOwnerName'] = userInfo.name
-        const result = await postCollection.insertOne(post);
-        res.send(result); 
-      });
+    //get All Individual User Posts
+    app.get("/getAllIndividualUserPosts/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await postCollection
+        .find(query)
+        .sort({ milliseconds: -1 })
+        .toArray();
+      res.send(result);
+    });
+    //get all chitchat users
+    app.get("/getAllChitChatUsers", async (req, res) => {
+      const query = {};
+      const cursor = usersCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    //insert user post
+    app.post("/insertPost", async (req, res) => {
+      const post = req.body;
+      const userInfo = await usersCollection.findOne({ email: post.email });
+      post["postOwnerPhoto"] = userInfo.profilePhoto;
+      post["postOwnerName"] = userInfo.name;
+      const result = await postCollection.insertOne(post);
+      res.send(result);
+    });
 
-       //insert user's friend req info
-      app.post("/addFriend", async (req, res) => {
-        const reqInfo = req.body;
-        const userInfo = await usersCollection.findOne({email:reqInfo.sender_email});
-        reqInfo['sender_photo'] = userInfo.profilePhoto
-        reqInfo['sender_name'] = userInfo.name
-        const result = await requestCollection.insertOne(reqInfo);
-        res.send(result)
+    //insert user's friend req info
+    app.post("/addFriend", async (req, res) => {
+      const reqInfo = req.body;
+      const userInfo = await usersCollection.findOne({
+        email: reqInfo.sender_email,
       });
+      reqInfo["sender_photo"] = userInfo.profilePhoto;
+      reqInfo["sender_name"] = userInfo.name;
+      const result = await requestCollection.insertOne(reqInfo);
+      res.send(result);
+    });
+
+    //get specific user's friend request
+    app.get("/request/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { receiver_email: email };
+      const cursor = requestCollection.find(query).sort({ milliseconds: -1 });
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    //insert every new user
+    app.post("/storeUserInfo", async (req, res) => {
+      const user = req.body;
+      user["profilePhoto"] = "https://i.ibb.co/RvdV5Kx/default-Avatar.webp";
+      user["coverPhoto"] = "https://i.ibb.co/RvdV5Kx/default-Avatar.webp";
+      user["friends"] = [];
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    //delete friend request
+    app.delete("/reqDelete/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }; 
+      const result = requestCollection.deleteOne(query);
+      res.send(result);
+    });
+
+     //insert every accepted friend request
+     app.post("/reqAccepted", async (req, res) => {
+      const reqAcceptedInfo = req.body;
+      //add friend in user collection
+      const filterSender = { email: reqAcceptedInfo.senderEmail };
+      const findSenderFriendInfo = await usersCollection.findOne(filterSender);
+      console.log(findSenderFriendInfo)
+      console.log(findSenderFriendInfo.friends)
+      const updateDocSender = { 
+        $set: {
+          friends: [...findSenderFriendInfo.friends, {email: reqAcceptedInfo.receiverEmail, friendRoom: reqAcceptedInfo.friendRoom}]
+        },
+      };
+      const updateFriendsArraySender = await usersCollection.updateOne(filterSender, updateDocSender);
+
+
+      const filterReceiver = { email: reqAcceptedInfo.receiverEmail };
+      const findReceiverFriendInfo = await usersCollection.findOne(filterSender);
+      const updateDocReceiver = {
+        $set: {
+          friends: [...findReceiverFriendInfo.friends, {email: reqAcceptedInfo.senderEmail, friendRoom: reqAcceptedInfo.friendRoom}]
+        },
+      };
+      const updateFriendsArrayReceiver = await usersCollection.updateOne(filterReceiver, updateDocReceiver);
+
+      //delete from req collections
+      const deleteFromColl = requestCollection.deleteOne({ _id: new ObjectId(reqAcceptedInfo.friendRoom)});
+
+      res.send(deleteFromColl);
+    });
+
   } catch {}
 }
 run().catch((err) => console.log(err));
