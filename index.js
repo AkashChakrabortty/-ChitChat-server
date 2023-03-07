@@ -22,6 +22,7 @@ async function run() {
     const usersCollection = client.db("chitchat-v1").collection("users");
     const postCollection = client.db("chitchat-v1").collection("posts");
     const requestCollection = client.db("chitchat-v1").collection("requests");
+    const likesCollection = client.db("chitchat-v1").collection("likes");
     
     //get getSingleUserInfo
     app.get("/getSingleUserInfo/:email", async (req, res) => {
@@ -33,7 +34,6 @@ async function run() {
     //get All Individual User Posts
     app.get("/getAllIndividualUserPosts/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email)
       const query = { email: email };
       const result = await postCollection
         .find(query)
@@ -97,6 +97,13 @@ async function run() {
      res.send(friendsPost)
     });
 
+     //get user's all likes
+     app.get("/getAllLikes/:email", async (req, res) => {
+      const email = req.params.email;
+      const allLike = await likesCollection.find({email}).sort({ milliseconds: -1 }).toArray()
+      res.send(allLike)
+    });
+
     //insert every new user
     app.post("/storeUserInfo", async (req, res) => {
       const user = req.body;
@@ -113,7 +120,7 @@ async function run() {
       const query = { _id: new ObjectId(likeInfo._id) }; 
       const postInfo = await postCollection.findOne(query);
       const found = postInfo.likes.find((liker)=>{
-        return liker.email === likeInfo.email
+        return liker?.email === likeInfo?.email
       })
       if (found) {
         res.send({ acknowledged: false });
@@ -124,6 +131,17 @@ async function run() {
           }
         }
         const updateLikesArray = await postCollection.updateOne(query, updateDoc);
+        const milliseconds = new Date().getTime();
+        const info = {
+          postId : likeInfo._id,
+          email: likeInfo.email,
+          milliseconds,
+          post: postInfo.post,
+          postImg: postInfo?.post_photo,
+          postOwnerPhoto: postInfo?.postOwnerPhoto,
+          postOwnerName: postInfo?.postOwnerName
+        }
+        const insertLike = await likesCollection.insertOne(info)
         res.send(updateLikesArray);
       }
 
