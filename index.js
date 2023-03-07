@@ -33,6 +33,7 @@ async function run() {
     //get All Individual User Posts
     app.get("/getAllIndividualUserPosts/:email", async (req, res) => {
       const email = req.params.email;
+      console.log(email)
       const query = { email: email };
       const result = await postCollection
         .find(query)
@@ -78,6 +79,25 @@ async function run() {
       res.send(result);
     });
 
+     //get user's friend's post
+     app.get("/getAllFriendsPosts/:email", async (req, res) => {
+      const email = req.params.email;
+      const userInfo = await usersCollection.findOne({email});
+      console.log(userInfo)
+      console.log(userInfo?.friends)
+      const friends = userInfo?.friends;
+      const allPosts = await postCollection.find().toArray();
+      let friendsPost=[];
+      friends?.forEach((friendInfo)=>{
+      allPosts?.forEach(postInfo=>{
+        if(friendInfo?.email===postInfo?.email){
+          friendsPost.push(postInfo)
+        }
+      })
+      })
+     res.send(friendsPost)
+    });
+
     //insert every new user
     app.post("/storeUserInfo", async (req, res) => {
       const user = req.body;
@@ -102,8 +122,6 @@ async function run() {
       //add friend in user collection
       const filterSender = { email: reqAcceptedInfo.senderEmail };
       const findSenderFriendInfo = await usersCollection.findOne(filterSender);
-      console.log(findSenderFriendInfo)
-      console.log(findSenderFriendInfo.friends)
       const updateDocSender = { 
         $set: {
           friends: [...findSenderFriendInfo.friends, {email: reqAcceptedInfo.receiverEmail, friendRoom: reqAcceptedInfo.friendRoom}]
