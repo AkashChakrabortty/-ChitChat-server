@@ -23,6 +23,7 @@ async function run() {
     const postCollection = client.db("chitchat-v1").collection("posts");
     const requestCollection = client.db("chitchat-v1").collection("requests");
     const likesCollection = client.db("chitchat-v1").collection("likes");
+    const commentsCollection = client.db("chitchat-v1").collection("comments");
     
     //get getSingleUserInfo
     app.get("/getSingleUserInfo/:email", async (req, res) => {
@@ -55,6 +56,7 @@ async function run() {
       post["postOwnerPhoto"] = userInfo.profilePhoto;
       post["postOwnerName"] = userInfo.name;
       post["likes"] = [];
+      post["comments"] = [];
       const result = await postCollection.insertOne(post);
       res.send(result);
     });
@@ -152,6 +154,33 @@ async function run() {
         res.send(updateLikesArray);
       }
 
+    });
+
+    
+     //insert user comments
+     app.post("/comments", async (req, res) => {
+      const commentsInfo = req.body;
+      const query = { _id: new ObjectId(commentsInfo._id) }; 
+      const postInfo = await postCollection.findOne(query);
+   
+        const updateDoc = {
+          $set: {
+            comments: [...postInfo.comments,commentsInfo]
+          }
+        }
+        const updateCommentsArray = await postCollection.updateOne(query, updateDoc);
+        const milliseconds = new Date().getTime();
+        const info = {
+          postId : commentsInfo._id,
+          email: commentsInfo.email,
+          milliseconds,
+          post: postInfo.post,
+          postImg: postInfo?.post_photo,
+          postOwnerPhoto: postInfo?.postOwnerPhoto,
+          postOwnerName: postInfo?.postOwnerName
+        }
+        const insertComments = await commentsCollection.insertOne(info)
+        res.send(updateCommentsArray);
     });
 
     //delete friend request
