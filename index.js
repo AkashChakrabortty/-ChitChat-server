@@ -179,6 +179,27 @@ async function run() {
       res.send(result);
     });
 
+     //insert user profile edit info
+     app.post("/profileInfoEdit", async (req, res) => {
+      const editInfo = req.body;
+      const filter = {email: editInfo.email};
+      console.log(editInfo)
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          profilePhoto: editInfo.profilePhotoLink,
+          coverPhoto: editInfo.coverPhotoLink,
+          bio: editInfo.bio,
+          study: editInfo.study,
+          works: editInfo.works,
+          from: editInfo.from,
+          relationship: editInfo.relationship,
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
      //insert user like
      app.post("/like", async (req, res) => {
       const likeInfo = req.body;
