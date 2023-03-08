@@ -24,6 +24,7 @@ async function run() {
     const requestCollection = client.db("chitchat-v1").collection("requests");
     const likesCollection = client.db("chitchat-v1").collection("likes");
     const commentsCollection = client.db("chitchat-v1").collection("comments");
+    const chatsCollection = client.db("chitchat-v1").collection("chats");
     
     //get getSingleUserInfo
     app.get("/getSingleUserInfo/:email", async (req, res) => {
@@ -42,6 +43,17 @@ async function run() {
         .toArray();
       res.send(result);
     });
+
+     //get All Individual User chat
+     app.get("/getAllChats/:room", async (req, res) => {
+      const room = req.params.room;
+      const query = { friendRoom: room };
+      const result = await chatsCollection
+        .find(query)
+        .toArray();
+      res.send(result);
+    });
+
     //get all chitchat users
     app.get("/getAllChitChatUsers", async (req, res) => {
       const query = {};
@@ -58,6 +70,16 @@ async function run() {
       post["likes"] = [];
       post["comments"] = [];
       const result = await postCollection.insertOne(post);
+      res.send(result);
+    });
+
+     //insert user chat
+     app.post("/insertChats", async (req, res) => {
+      const chats = req.body;
+      const userInfo = await usersCollection.findOne({ email: chats.senderEmail });
+      chats["senderName"] = userInfo.name;
+      chats["senderPhoto"] = userInfo.profilePhoto;
+      const result = await chatsCollection.insertOne(chats);
       res.send(result);
     });
 
