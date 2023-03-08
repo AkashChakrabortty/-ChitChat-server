@@ -106,6 +106,13 @@ async function run() {
       res.send(allLike)
     });
 
+     //get user's all comments
+     app.get("/getAllComments/:email", async (req, res) => {
+      const email = req.params.email;
+      const allComments = await commentsCollection.find({email}).sort({ milliseconds: -1 }).toArray()
+      res.send(allComments)
+    });
+
       //get search result
       app.get("/getSearchUsers/:name", async (req, res) => {
         const name = req.params.name;
