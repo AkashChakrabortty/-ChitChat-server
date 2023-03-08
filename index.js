@@ -99,6 +99,26 @@ async function run() {
      res.send(friendsPost)
     });
 
+      //get user's all friend
+      app.get("/getAllFriends/:email", async (req, res) => {
+        const email = req.params.email;
+        const userInfo = await usersCollection.findOne({email});
+        const friends = userInfo?.friends;
+        const allUsers = await usersCollection.find().toArray();
+
+        let allFriends=[];
+        friends?.forEach((friendInfo)=>{
+          allUsers?.forEach(allUser=>{
+          if(friendInfo?.email===allUser?.email){
+            friendInfo['friendPhoto'] = allUser.profilePhoto
+            friendInfo['friendName'] = allUser.name
+            allFriends.push(friendInfo)
+          }
+        })
+        })
+       res.send(allFriends)
+      });
+
      //get user's all likes
      app.get("/getAllLikes/:email", async (req, res) => {
       const email = req.params.email;
