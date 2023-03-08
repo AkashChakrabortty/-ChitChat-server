@@ -169,7 +169,7 @@ async function run() {
       const commentsInfo = req.body;
       const query = { _id: new ObjectId(commentsInfo._id) }; 
       const postInfo = await postCollection.findOne(query);
-   
+      const userInfo = await usersCollection.findOne({email:commentsInfo.email})
         const updateDoc = {
           $set: {
             comments: [...postInfo.comments,commentsInfo]
@@ -184,7 +184,10 @@ async function run() {
           post: postInfo.post,
           postImg: postInfo?.post_photo,
           postOwnerPhoto: postInfo?.postOwnerPhoto,
-          postOwnerName: postInfo?.postOwnerName
+          postOwnerName: postInfo?.postOwnerName,
+          comment: commentsInfo.comment,
+          commentOwnerName: userInfo.name,
+          commentOwnerPhoto: userInfo.profilePhoto,
         }
         const insertComments = await commentsCollection.insertOne(info)
         res.send(updateCommentsArray);
