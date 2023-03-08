@@ -113,6 +113,13 @@ async function run() {
         res.send(allUsers)
       });
 
+        //get all comments in a post
+        app.get("/getPostAllComments/:id", async (req, res) => {
+          const id = req.params.id;
+          const allComments = await commentsCollection.find({postId: id}).sort({ milliseconds: -1 }).toArray()
+          res.send(allComments)
+        });
+
     //insert every new user
     app.post("/storeUserInfo", async (req, res) => {
       const user = req.body;
